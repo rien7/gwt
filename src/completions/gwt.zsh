@@ -79,8 +79,22 @@ _gwt_cmd_prune() {
 }
 
 _gwt_cmd_completion() {
+  if (( CURRENT == 3 )); then
+    _describe -t completion-args 'completion command' \
+      'zsh:Generate zsh completion script' \
+      'install:Install shell completion'
+    return 0
+  fi
+
+  if [[ ${words[3]} == install ]]; then
+    _arguments -C \
+      '1:subcommand:(install)' \
+      '2:shell:(zsh)'
+    return 0
+  fi
+
   _arguments -C \
-    '1:shell:(zsh)'
+    '1:shell:(zsh install)'
 }
 
 _gwt() {
@@ -97,7 +111,7 @@ _gwt() {
     'pull:Fetch remote updates and rebase the current worktree branch'
     'ls:List all active worktrees'
     'prune:Clean up stale git worktree metadata'
-    'completion:Generate shell completion scripts'
+    'completion:Generate or install shell completion scripts'
   )
 
   if (( CURRENT == 2 )); then
@@ -122,4 +136,3 @@ _gwt() {
 }
 
 compdef _gwt {{COMMAND_NAME}}
-_gwt "$@"

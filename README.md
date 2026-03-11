@@ -35,6 +35,12 @@ After installation:
 gwt --help
 ```
 
+If you use zsh, the installer will also print a reminder for:
+
+```bash
+gwt completion install zsh
+```
+
 ## What The Workspace Looks Like
 
 After `gwt init`, a workspace looks like this:
@@ -186,9 +192,23 @@ Current support:
 
 - `zsh`
 
+### `gwt completion install [shell]`
+
+Install the shell completion file into your home directory.
+
+Current support:
+
+- `zsh`
+
 ## Shell Completion
 
-Generate and install zsh completion:
+Generate and install zsh completion with the built-in command:
+
+```bash
+gwt completion install zsh
+```
+
+Manual install is also available:
 
 ```bash
 mkdir -p ~/.zsh/completions

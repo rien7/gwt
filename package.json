@@ -1,7 +1,7 @@
 {
   "name": "@rien7/gwt",
   "type": "module",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A CLI for managing Git worktrees with a bare-repo workspace layout",
   "license": "MIT",
   "author": "rien7",
@@ -37,7 +37,8 @@
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
-    "prepublishOnly": "pnpm build"
+    "prepublishOnly": "pnpm build",
+    "postinstall": "node -e \"if(process.env.CI!=='true'){console.log('gwt installed. To enable zsh completion, run: gwt completion install zsh')}\""
   },
   "devDependencies": {
     "@types/node": "^25.4.0",

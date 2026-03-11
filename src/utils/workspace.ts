@@ -96,18 +96,24 @@ export function resolveWorkspaceContext(cwd = process.cwd()): WorkspaceContext {
     cwd,
   )
 
-  if (probe.status !== 0) {
-    throw new Error('not a gwt workspace')
-  }
+  let topLevel: string
+  let commonDir: string
 
-  const lines = probe.stdout.split(/\r?\n/).filter(Boolean)
-  if (lines.length < 2) {
-    throw new Error('not a gwt workspace')
-  }
+  if (probe.status === 0) {
+    const lines = probe.stdout.split(/\r?\n/).filter(Boolean)
+    if (lines.length < 2) {
+      throw new Error('not a gwt workspace')
+    }
 
-  const [topLevel, commonDir] = lines
-  if (basename(commonDir) !== '.bare') {
-    throw new Error('not a gwt workspace')
+    ;[topLevel, commonDir] = lines
+  } else {
+    const fallback = findWorkspaceRoot(cwd)
+    if (!fallback) {
+      throw new Error('not a gwt workspace')
+    }
+
+    topLevel = fallback.workspaceRoot
+    commonDir = fallback.commonDir
   }
 
   const workspaceRoot = dirname(commonDir)
@@ -240,5 +246,36 @@ function mergeConfigFile(configPath: string, target: GwtConfig) {
     } else if (key === 'auto_push') {
       target.autoPush = parseTomlBoolean(value, 'auto_push')
     }
+  }
+}
+
+function findWorkspaceRoot(cwd: string): { workspaceRoot: string; commonDir: string } | null {
+  let current = resolve(cwd)
+
+  while (true) {
+    const bareDir = basename(current) === '.bare' ? current : resolve(current, '.bare')
+    const workspaceRoot = basename(current) === '.bare' ? dirname(current) : current
+    const dotGitPath = resolve(workspaceRoot, '.git')
+
+    if (existsSync(bareDir) && existsSync(dotGitPath)) {
+      const gitPointer = readFileSync(dotGitPath, 'utf8').trim()
+      const match = /^gitdir:\s*(.+)$/.exec(gitPointer)
+      if (match) {
+        const resolvedGitDir = resolve(workspaceRoot, match[1])
+        if (resolvedGitDir === bareDir && basename(resolvedGitDir) === '.bare') {
+          return {
+            workspaceRoot,
+            commonDir: bareDir,
+          }
+        }
+      }
+    }
+
+    const parent = dirname(current)
+    if (parent === current) {
+      return null
+    }
+
+    current = parent
   }
 }

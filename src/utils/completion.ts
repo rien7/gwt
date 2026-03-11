@@ -1,9 +1,16 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { resolve } from 'node:path'
 import { tryGit } from './git'
 import { tryResolveWorkspaceContext, type WorkspaceContext } from './workspace'
 
 type CompletionQueryKind = 'remote-branches' | 'local-branches' | 'removable-branches' | 'refs'
 type SupportedShell = 'zsh'
+
+export type CompletionInstallResult = {
+  installPath: string
+  notes: string[]
+}
 
 export function tryHandleCompletionQuery(argv: string[]): boolean {
   if (argv[0] !== '__complete') {
@@ -41,6 +48,15 @@ function resolveShell(shell?: string): SupportedShell {
   }
 
   throw new Error('Only zsh completion is supported right now. Run "gwt completion zsh".')
+}
+
+export function installCompletion(shell?: string, home = homedir()): CompletionInstallResult {
+  const resolvedShell = resolveShell(shell)
+  if (resolvedShell === 'zsh') {
+    return installZshCompletion(home)
+  }
+
+  throw new Error(`Unsupported shell: ${resolvedShell}`)
 }
 
 function getCompletionValues(kind: CompletionQueryKind): string[] {
@@ -105,4 +121,43 @@ function uniqueSorted(values: string[]): string[] {
 function loadCompletionTemplate(fileName: string): string {
   const templateUrl = new URL(`./completions/${fileName}`, import.meta.url)
   return readFileSync(templateUrl, 'utf8')
+}
+
+function installZshCompletion(home: string): CompletionInstallResult {
+  const completionDir = resolve(home, '.zsh', 'completions')
+  const installPath = resolve(completionDir, '_gwt')
+  const zshrcPath = resolve(home, '.zshrc')
+
+  mkdirSync(completionDir, { recursive: true })
+  writeFileSync(installPath, emitCompletionScript('zsh'))
+
+  const notes: string[] = []
+
+  if (existsSync(zshrcPath)) {
+    const zshrc = readFileSync(zshrcPath, 'utf8')
+    if (!hasCompletionFpath(zshrc)) {
+      notes.push('Add `fpath=(~/.zsh/completions $fpath)` to ~/.zshrc.')
+    }
+    if (!/\bcompinit\b/.test(zshrc)) {
+      notes.push('Add `autoload -Uz compinit && compinit` to ~/.zshrc.')
+    }
+  } else {
+    notes.push('Create ~/.zshrc and add `fpath=(~/.zsh/completions $fpath)`.')
+    notes.push('Then add `autoload -Uz compinit && compinit` to ~/.zshrc.')
+  }
+
+  notes.push('Restart zsh or run `autoload -Uz compinit && compinit` in the current shell.')
+
+  return {
+    installPath,
+    notes,
+  }
+}
+
+function hasCompletionFpath(zshrc: string): boolean {
+  return (
+    zshrc.includes('~/.zsh/completions') ||
+    zshrc.includes('$HOME/.zsh/completions') ||
+    zshrc.includes('${HOME}/.zsh/completions')
+  )
 }
