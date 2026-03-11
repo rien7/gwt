@@ -1,4 +1,5 @@
 import { cac } from 'cac'
+import { readFileSync } from 'node:fs'
 import { registerCompletionCommand } from './commands/completion'
 import { registerGetCommand } from './commands/get'
 import { registerInitCommand } from './commands/init'
@@ -14,6 +15,9 @@ if (tryHandleCompletionQuery(process.argv.slice(2))) {
   process.exit(0)
 }
 
+const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
+  version: string
+}
 const cli = cac('gwt')
 
 registerCompletionCommand(cli)
@@ -27,5 +31,5 @@ registerLsCommand(cli)
 registerPruneCommand(cli)
 
 cli.help()
-cli.version('1.0.0')
+cli.version(packageJson.version)
 cli.parse()
