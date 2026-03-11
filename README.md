@@ -35,12 +35,6 @@ After installation:
 gwt --help
 ```
 
-If you use zsh, the installer will also print a reminder for:
-
-```bash
-gwt completion install zsh
-```
-
 ## What The Workspace Looks Like
 
 After `gwt init`, a workspace looks like this:
@@ -183,58 +177,6 @@ List active worktrees.
 ### `gwt prune`
 
 Clean stale worktree metadata after directories were removed manually.
-
-### `gwt completion [shell]`
-
-Print a shell completion script.
-
-Current support:
-
-- `zsh`
-
-### `gwt completion install [shell]`
-
-Install the shell completion file into your home directory.
-
-Current support:
-
-- `zsh`
-
-## Shell Completion
-
-Generate and install zsh completion with the built-in command:
-
-```bash
-gwt completion install zsh
-```
-
-Manual install is also available:
-
-```bash
-mkdir -p ~/.zsh/completions
-gwt completion zsh > ~/.zsh/completions/_gwt
-```
-
-Make sure your `~/.zshrc` includes:
-
-```bash
-fpath=(~/.zsh/completions $fpath)
-autoload -Uz compinit && compinit
-```
-
-Or load it for the current shell only:
-
-```bash
-source <(gwt completion zsh)
-```
-
-The completion script supports:
-
-- command completion
-- option completion
-- dynamic remote branch completion for `gwt get`
-- dynamic removable branch completion for `gwt rm`
-- dynamic ref completion for `gwt new --from`
 
 ## Configuration
 

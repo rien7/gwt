@@ -5,12 +5,6 @@ import { defineConfig } from 'tsdown'
 const shebang = '#!/usr/bin/env node\n'
 
 export default defineConfig({
-  copy: [
-    {
-      from: 'src/completions/gwt.zsh',
-      to: 'dist/completions',
-    },
-  ],
   exports: true,
   hooks: {
     'build:done': async ({ chunks, options }) => {

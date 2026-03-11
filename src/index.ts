@@ -1,6 +1,5 @@
 import { cac } from 'cac'
 import { readFileSync } from 'node:fs'
-import { registerCompletionCommand } from './commands/completion'
 import { registerGetCommand } from './commands/get'
 import { registerInitCommand } from './commands/init'
 import { registerLsCommand } from './commands/ls'
@@ -9,18 +8,12 @@ import { registerPruneCommand } from './commands/prune'
 import { registerPullCommand } from './commands/pull'
 import { registerRmCommand } from './commands/rm'
 import { registerSyncCommand } from './commands/sync'
-import { tryHandleCompletionQuery } from './utils/completion'
-
-if (tryHandleCompletionQuery(process.argv.slice(2))) {
-  process.exit(0)
-}
 
 const packageJson = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
   version: string
 }
 const cli = cac('gwt')
 
-registerCompletionCommand(cli)
 registerInitCommand(cli)
 registerNewCommand(cli)
 registerGetCommand(cli)
