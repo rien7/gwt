@@ -121,4 +121,5 @@ _gwt() {
   esac
 }
 
+compdef _gwt {{COMMAND_NAME}}
 _gwt "$@"
