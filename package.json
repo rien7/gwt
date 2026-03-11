@@ -1,0 +1,53 @@
+{
+  "name": "@rien7/gwt",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "A CLI for managing Git worktrees with a bare-repo workspace layout",
+  "license": "MIT",
+  "author": "rien7",
+  "homepage": "https://github.com/rien7/gwt#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rien7/gwt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rien7/gwt/issues"
+  },
+  "keywords": [
+    "git",
+    "worktree",
+    "cli",
+    "developer-tools",
+    "productivity"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "gwt": "./dist/index.mjs"
+  },
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown && node scripts/copy-assets.mjs",
+    "dev": "tsdown --watch",
+    "prepublishOnly": "pnpm build"
+  },
+  "devDependencies": {
+    "@types/node": "^25.4.0",
+    "tsdown": "^0.21.1",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.1.0",
+    "ansis": "^4.2.0",
+    "cac": "^7.0.0"
+  },
+  "packageManager": "pnpm@10.18.3+sha512.bbd16e6d7286fd7e01f6b3c0b3c932cda2965c06a908328f74663f10a9aea51f1129eea615134bf992831b009eabe167ecb7008b597f40ff9bc75946aadfb08d"
+}
