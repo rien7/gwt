@@ -48,6 +48,8 @@ gwt completion install bash
 gwt completion install fish
 ```
 
+If you install `gwt` from npm, the installer prints the matching completion command for your current shell.
+
 ## What The Workspace Looks Like
 
 After `gwt init`, a workspace looks like this:

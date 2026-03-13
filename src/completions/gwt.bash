@@ -5,8 +5,38 @@ _gwt_complete_kind() {
   COMPREPLY=( $(compgen -W "$values" -- "$cur") )
 }
 
+_gwt_positional_count_before_current() {
+  local option_with_value=$1
+  local count=0
+  local expect_value=0
+  local i word
+
+  for ((i = 2; i < COMP_CWORD; i++)); do
+    word="${COMP_WORDS[i]}"
+
+    if (( expect_value )); then
+      expect_value=0
+      continue
+    fi
+
+    case "$word" in
+      "$option_with_value")
+        expect_value=1
+        ;;
+      -*)
+        ;;
+      *)
+        ((count++))
+        ;;
+    esac
+  done
+
+  printf '%s' "$count"
+}
+
 _gwt_completion() {
   local cur prev cmd
+  local positional_count
   COMPREPLY=()
   cur="${COMP_WORDS[COMP_CWORD]}"
   prev="${COMP_WORDS[COMP_CWORD-1]}"
@@ -38,20 +68,27 @@ _gwt_completion() {
         _gwt_complete_kind refs
       elif [[ $cur == -* ]]; then
         COMPREPLY=( $(compgen -W "--from --no-fetch --print-path --push -p" -- "$cur") )
+      else
+        positional_count="$(_gwt_positional_count_before_current --from)"
+        if [[ $positional_count -gt 0 ]]; then
+          COMPREPLY=( $(compgen -W "--from --no-fetch --print-path --push -p" -- "$cur") )
+        fi
       fi
       ;;
     get)
-      if [[ $COMP_CWORD -eq 2 ]]; then
-        _gwt_complete_kind remote-branches
-      elif [[ $cur == -* ]]; then
+      positional_count="$(_gwt_positional_count_before_current '')"
+      if [[ $cur == -* ]]; then
         COMPREPLY=( $(compgen -W "--no-fetch --print-path" -- "$cur") )
+      elif [[ $positional_count -eq 0 ]]; then
+        _gwt_complete_kind remote-branches
       fi
       ;;
     rm)
-      if [[ $COMP_CWORD -eq 2 ]]; then
-        _gwt_complete_kind removable-branches
-      elif [[ $cur == -* ]]; then
+      positional_count="$(_gwt_positional_count_before_current '')"
+      if [[ $cur == -* ]]; then
         COMPREPLY=( $(compgen -W "--remote -r --force -f" -- "$cur") )
+      elif [[ $positional_count -eq 0 ]]; then
+        _gwt_complete_kind removable-branches
       fi
       ;;
     sync)

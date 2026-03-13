@@ -1,7 +1,7 @@
 {
   "name": "@rien7/gwt",
   "type": "module",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A CLI for managing Git worktrees with a bare-repo workspace layout",
   "license": "MIT",
   "author": "rien7",
@@ -32,11 +32,13 @@
   },
   "types": "./dist/index.d.mts",
   "files": [
-    "dist"
+    "dist",
+    "scripts/postinstall.mjs"
   ],
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
+    "postinstall": "node ./scripts/postinstall.mjs",
     "prepublishOnly": "pnpm build"
   },
   "devDependencies": {

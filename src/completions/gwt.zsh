@@ -16,6 +16,39 @@ _gwt_complete_new_branch() {
   _message 'new branch name'
 }
 
+_gwt_has_positional_before_current() {
+  local option_with_value=$1
+  local i word expect_value=0
+
+  for (( i = 3; i < CURRENT; i++ )); do
+    word=${words[i]}
+
+    if (( expect_value )); then
+      expect_value=0
+      continue
+    fi
+
+    case "$word" in
+      ${option_with_value})
+        expect_value=1
+        ;;
+      -*)
+        ;;
+      *)
+        return 0
+        ;;
+    esac
+  done
+
+  return 1
+}
+
+_gwt_compadd_options() {
+  local -a values
+  values=("$@")
+  compadd -- "${values[@]}"
+}
+
 _gwt_complete_refs() {
   _gwt_compadd_lines refs || _message 'git ref'
 }
@@ -40,26 +73,50 @@ _gwt_cmd_init() {
 }
 
 _gwt_cmd_new() {
-  _arguments -C \
-    '(-p --push)'{-p,--push}'[push the branch to origin and set upstream]' \
-    '--from[start from a custom ref]:git ref:_gwt_complete_refs' \
-    '--no-fetch[skip git fetch --all before creation]' \
-    '--print-path[print the created worktree path only]' \
-    '1:branch name:_gwt_complete_new_branch'
+  if [[ ${words[CURRENT-1]} == --from ]]; then
+    _gwt_complete_refs
+    return 0
+  fi
+
+  if [[ ${words[CURRENT]} == -* ]]; then
+    _gwt_compadd_options --from --no-fetch --print-path --push -p
+    return 0
+  fi
+
+  if ! _gwt_has_positional_before_current '--from'; then
+    _gwt_complete_new_branch
+    return 0
+  fi
+
+  _gwt_compadd_options --from --no-fetch --print-path --push -p
 }
 
 _gwt_cmd_get() {
-  _arguments -C \
-    '--no-fetch[skip git fetch --all before checkout]' \
-    '--print-path[print the created worktree path only]' \
-    '1:remote branch:_gwt_complete_remote_branches'
+  if [[ ${words[CURRENT]} == -* ]]; then
+    _gwt_compadd_options --no-fetch --print-path
+    return 0
+  fi
+
+  if ! _gwt_has_positional_before_current ''; then
+    _gwt_complete_remote_branches
+    return 0
+  fi
+
+  _gwt_compadd_options --no-fetch --print-path
 }
 
 _gwt_cmd_rm() {
-  _arguments -C \
-    '(-r --remote)'{-r,--remote}'[delete the remote branch as well]' \
-    '(-f --force)'{-f,--force}'[force removal even with uncommitted changes]' \
-    '1:local branch:_gwt_complete_removable_branches'
+  if [[ ${words[CURRENT]} == -* ]]; then
+    _gwt_compadd_options --remote -r --force -f
+    return 0
+  fi
+
+  if ! _gwt_has_positional_before_current ''; then
+    _gwt_complete_removable_branches
+    return 0
+  fi
+
+  _gwt_compadd_options --remote -r --force -f
 }
 
 _gwt_cmd_sync() {
