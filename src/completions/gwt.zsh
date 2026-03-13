@@ -83,7 +83,7 @@ _gwt_cmd_init() {
 }
 
 _gwt_cmd_new() {
-  if [[ ${words[CURRENT-1]} == --from ]]; then
+  if [[ ${words[CURRENT]} == --from || ${words[CURRENT-1]} == --from ]]; then
     _gwt_complete_refs
     return 0
   fi
