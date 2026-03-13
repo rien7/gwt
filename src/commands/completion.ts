@@ -1,7 +1,7 @@
 import { intro, outro } from '@clack/prompts'
 import type { CAC } from 'cac'
 import ansis from 'ansis'
-import { runCliAction } from '../utils/cli'
+import { runCliAction, showCliUsageError } from '../utils/cli'
 import { emitCompletionScript, installCompletion } from '../utils/completion'
 
 type CompletionOptions = Record<string, never>
@@ -18,7 +18,8 @@ export function registerCompletionCommand(cli: CAC) {
 
         if (subcommand === 'install') {
           if (extraArg) {
-            throw new Error('Usage: gwt completion install [shell]')
+            showCliUsageError(cli, 'Unexpected arguments for `gwt completion install`.')
+            process.exit(1)
           }
 
           const result = installCompletion(shellArg)
@@ -35,7 +36,8 @@ export function registerCompletionCommand(cli: CAC) {
         }
 
         if (shellArg) {
-          throw new Error('Usage: gwt completion [shell]')
+          showCliUsageError(cli, 'Unexpected arguments for `gwt completion`.')
+          process.exit(1)
         }
 
         process.stdout.write(emitCompletionScript(subcommand))

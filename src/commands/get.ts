@@ -97,14 +97,23 @@ export function registerGetCommand(cli: CAC) {
         }
 
         try {
-          const hookOutput = runConfiguredHook(context, 'post_get', {
-            branch,
-            path: worktreePath,
-          })
-          if (hookOutput) {
-            const stream = printPathOnly ? process.stderr : process.stdout
-            stream.write(`${hookOutput}\n`)
+          if (printPathOnly) {
+            process.stderr.write('Running post_get hook...\n')
+          } else {
+            log.info('Running post_get hook...')
           }
+
+          await runConfiguredHook(
+            context,
+            'post_get',
+            {
+              branch,
+              path: worktreePath,
+            },
+            {
+              printPathOnly,
+            },
+          )
         } catch (error) {
           warn(`post_get hook failed: ${errorMessage(error)}`)
         }

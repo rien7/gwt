@@ -36,6 +36,10 @@ const BASH_COMPLETION_BLOCK = [
   'fi',
   BASH_COMPLETION_BLOCK_END,
 ].join('\n')
+const COMPLETION_HINT_MARKER_DIR = resolve(
+  process.env.XDG_STATE_HOME || resolve(homedir(), '.local', 'state'),
+  'gwt',
+)
 
 export function tryHandleCompletionQuery(argv: string[]): boolean {
   if (argv[0] !== '__complete') {
@@ -81,13 +85,36 @@ export function installCompletion(shell?: string, home = homedir()): CompletionI
   throw new Error(`Unsupported shell: ${resolvedShell}`)
 }
 
+export function maybeShowCompletionInstallHint(argv: string[], home = homedir()) {
+  if (!process.stderr.isTTY || process.env.CI || argv[0] === 'completion') {
+    return
+  }
+
+  const shell = detectCurrentShell()
+  if (!shell || hasInstalledCompletion(shell, home) || hasSeenCompletionHint(shell)) {
+    return
+  }
+
+  process.stderr.write(
+    [
+      '',
+      `[gwt] Shell completion is available for ${shell}.`,
+      `[gwt] Run \`gwt completion install ${shell}\` to enable it.`,
+      '',
+    ].join('\n'),
+  )
+
+  mkdirSync(COMPLETION_HINT_MARKER_DIR, { recursive: true })
+  writeFileSync(completionHintMarkerPath(shell), `${new Date().toISOString()}\n`)
+}
+
 function resolveShell(shell?: string): SupportedShell {
   if (shell === 'zsh' || shell === 'bash' || shell === 'fish') {
     return shell
   }
 
   if (!shell) {
-    const currentShell = process.env.SHELL?.split('/').pop()
+    const currentShell = detectCurrentShell()
     if (currentShell === 'zsh' || currentShell === 'bash' || currentShell === 'fish') {
       return currentShell
     }
@@ -251,4 +278,33 @@ function joinZshrcParts(...parts: string[]): string {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function detectCurrentShell(): SupportedShell | null {
+  const currentShell = process.env.SHELL?.split('/').pop()
+  if (currentShell === 'zsh' || currentShell === 'bash' || currentShell === 'fish') {
+    return currentShell
+  }
+
+  return null
+}
+
+function hasInstalledCompletion(shell: SupportedShell, home: string): boolean {
+  if (shell === 'zsh') {
+    return existsSync(resolve(home, '.zsh', 'completions', '_gwt'))
+  }
+
+  if (shell === 'bash') {
+    return existsSync(resolve(home, '.local', 'share', 'bash-completion', 'completions', 'gwt'))
+  }
+
+  return existsSync(resolve(process.env.XDG_CONFIG_HOME || resolve(home, '.config'), 'fish', 'completions', 'gwt.fish'))
+}
+
+function hasSeenCompletionHint(shell: SupportedShell): boolean {
+  return existsSync(completionHintMarkerPath(shell))
+}
+
+function completionHintMarkerPath(shell: SupportedShell): string {
+  return resolve(COMPLETION_HINT_MARKER_DIR, `${shell}-completion-hint-seen`)
 }

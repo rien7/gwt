@@ -49,6 +49,16 @@ _gwt_compadd_options() {
   compadd -- "${values[@]}"
 }
 
+_gwt_is_command() {
+  case "$1" in
+    completion|init|new|get|rm|sync|pull|ls|prune)
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
 _gwt_complete_refs() {
   _gwt_compadd_lines refs || _message 'git ref'
 }
@@ -180,6 +190,22 @@ _gwt() {
       compadd -- --help --version
       return 0
     fi
+
+    if _gwt_is_command "${words[2]}"; then
+      case "${words[2]}" in
+        completion) _gwt_cmd_completion ;;
+        init) _gwt_cmd_init ;;
+        new) _gwt_cmd_new ;;
+        get) _gwt_cmd_get ;;
+        rm) _gwt_cmd_rm ;;
+        sync) _gwt_cmd_sync ;;
+        pull) _gwt_cmd_pull ;;
+        ls) _gwt_cmd_ls ;;
+        prune) _gwt_cmd_prune ;;
+      esac
+      return $?
+    fi
+
     _describe -t commands 'gwt command' commands && return 0
   fi
 

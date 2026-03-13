@@ -48,7 +48,7 @@ gwt completion install bash
 gwt completion install fish
 ```
 
-If you install `gwt` from npm, the installer prints the matching completion command for your current shell.
+If you install `gwt` from npm, the package includes a shell-aware completion hint. Some npm setups hide lifecycle script output; in that case `gwt` prints the same hint once on first interactive run.
 
 ## What The Workspace Looks Like
 
@@ -267,7 +267,7 @@ The same values are also exported as environment variables:
 If a hook exits non-zero, `gwt` prints a warning but keeps the created worktree.
 
 Hooks run in a child shell rooted at the workspace root, so `cd "$1"` only affects the hook itself, not your current shell.
-For example, `post_get = "cd \"$1\" && npm install"` runs dependency installation inside the new worktree.
+For example, `post_get = "cd \"$1\" && npm install"` runs dependency installation inside the new worktree. Hook output streams live to the terminal; with `--print-path`, the path stays on `stdout` and hook logs go to `stderr`.
 
 ## Shell Completion
 

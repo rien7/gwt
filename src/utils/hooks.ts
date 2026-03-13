@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import type { WorkspaceContext } from './workspace'
 
 export type HookEventName = 'post_new' | 'post_get'
@@ -8,10 +8,19 @@ type HookPayload = {
   path: string
 }
 
-export function runConfiguredHook(context: WorkspaceContext, event: HookEventName, payload: HookPayload): string | null {
+type RunHookOptions = {
+  printPathOnly?: boolean
+}
+
+export async function runConfiguredHook(
+  context: WorkspaceContext,
+  event: HookEventName,
+  payload: HookPayload,
+  options: RunHookOptions = {},
+): Promise<void> {
   const command = getHookCommand(context, event)
   if (!command) {
-    return null
+    return
   }
 
   const resolvedCommand = interpolateHookCommand(command, {
@@ -20,33 +29,56 @@ export function runConfiguredHook(context: WorkspaceContext, event: HookEventNam
     path: payload.path,
     workspaceRoot: context.workspaceRoot,
   })
-  const result = spawnSync(
-    process.env.SHELL || '/bin/sh',
-    ['-lc', resolvedCommand, '--', payload.path, payload.branch, context.workspaceRoot, event],
-    {
-      cwd: context.workspaceRoot,
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        GWT_HOOK_BRANCH: payload.branch,
-        GWT_HOOK_EVENT: event,
-        GWT_HOOK_PATH: payload.path,
-        GWT_HOOK_WORKSPACE_ROOT: context.workspaceRoot,
+
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(
+      process.env.SHELL || '/bin/sh',
+      ['-lc', resolvedCommand, '--', payload.path, payload.branch, context.workspaceRoot, event],
+      {
+        cwd: context.workspaceRoot,
+        env: {
+          ...process.env,
+          GWT_HOOK_BRANCH: payload.branch,
+          GWT_HOOK_EVENT: event,
+          GWT_HOOK_PATH: payload.path,
+          GWT_HOOK_WORKSPACE_ROOT: context.workspaceRoot,
+        },
+        stdio: options.printPathOnly ? ['ignore', 'pipe', 'pipe'] : 'inherit',
       },
-      stdio: 'pipe',
-    },
-  )
+    )
 
-  if (result.error) {
-    throw result.error
-  }
+    let bufferedOutput = ''
 
-  const output = [result.stdout, result.stderr].filter(Boolean).join('').trim()
-  if ((result.status ?? 1) !== 0) {
-    throw new Error(output || `Hook failed: ${resolvedCommand}`)
-  }
+    if (options.printPathOnly) {
+      child.stdout?.on('data', (chunk) => {
+        const text = chunk.toString()
+        bufferedOutput += text
+        process.stderr.write(text)
+      })
 
-  return output || null
+      child.stderr?.on('data', (chunk) => {
+        const text = chunk.toString()
+        bufferedOutput += text
+        process.stderr.write(text)
+      })
+    }
+
+    child.on('error', reject)
+    child.on('close', (code, signal) => {
+      if (code === 0) {
+        resolve()
+        return
+      }
+
+      const summary = bufferedOutput.trim()
+      if (signal) {
+        reject(new Error(summary || `Hook terminated by signal ${signal}: ${resolvedCommand}`))
+        return
+      }
+
+      reject(new Error(summary || `Hook exited with status ${code ?? 1}: ${resolvedCommand}`))
+    })
+  })
 }
 
 function getHookCommand(context: WorkspaceContext, event: HookEventName): string | undefined {

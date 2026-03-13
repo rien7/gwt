@@ -89,14 +89,23 @@ export function registerNewCommand(cli: CAC) {
         }
 
         try {
-          const hookOutput = runConfiguredHook(context, 'post_new', {
-            branch,
-            path: worktreePath,
-          })
-          if (hookOutput) {
-            const stream = printPathOnly ? process.stderr : process.stdout
-            stream.write(`${hookOutput}\n`)
+          if (printPathOnly) {
+            process.stderr.write('Running post_new hook...\n')
+          } else {
+            log.info('Running post_new hook...')
           }
+
+          await runConfiguredHook(
+            context,
+            'post_new',
+            {
+              branch,
+              path: worktreePath,
+            },
+            {
+              printPathOnly,
+            },
+          )
         } catch (error) {
           warn(`post_new hook failed: ${errorMessage(error)}`)
         }
