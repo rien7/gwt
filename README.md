@@ -2,11 +2,7 @@
 
 `gwt` is a CLI for managing Git worktrees with a bare-repo workspace layout.
 
-It is published on npm as `@rien7/gwt`, but the installed command is simply:
-
-```bash
-gwt
-```
+Install it from npm as `@rien7/gwt`. The installed command is `gwt`.
 
 The goal is to make multi-branch Git work more predictable:
 
@@ -29,7 +25,7 @@ Or with pnpm:
 pnpm add -g @rien7/gwt
 ```
 
-After installation:
+After installation, check the command:
 
 ```bash
 gwt --help
@@ -41,7 +37,7 @@ If you use zsh, install completion once:
 gwt completion install zsh
 ```
 
-Other supported shells:
+For bash or fish:
 
 ```bash
 gwt completion install bash
@@ -50,7 +46,7 @@ gwt completion install fish
 
 If you install `gwt` from npm, the package includes a shell-aware completion hint. Some npm setups hide lifecycle script output; in that case `gwt` prints the same hint once on first interactive run.
 
-## What The Workspace Looks Like
+## Workspace Layout
 
 After `gwt init`, a workspace looks like this:
 
@@ -70,7 +66,7 @@ How it works:
 - each worktree lives as a sibling directory in the workspace root
 - branch names map to directory names by replacing `/` with `-`
 
-Examples:
+Branch names map to directory names like this:
 
 | Branch | Directory |
 | --- | --- |
@@ -93,7 +89,7 @@ cd my-project/main
 gwt new feature/example
 ```
 
-Check out an existing remote branch:
+Attach a worktree for an existing branch:
 
 ```bash
 gwt get feature/existing
@@ -150,7 +146,7 @@ cd "$(gwt new feature/example --print-path)"
 
 ### `gwt get <branch>`
 
-Create a worktree for an existing remote branch.
+Create or attach a worktree for an existing branch. If the local branch already exists, `gwt get` attaches a worktree to it. Otherwise it creates the local branch from `origin/<branch>`.
 
 Useful options:
 
@@ -175,23 +171,11 @@ Useful options:
 
 ### `gwt completion [shell]`
 
-Print a shell completion script.
-
-Current support:
-
-- `zsh`
-- `bash`
-- `fish`
+Print a shell completion script for `zsh`, `bash`, or `fish`.
 
 ### `gwt completion install [shell]`
 
-Install the shell completion file and update your shell config.
-
-Current support:
-
-- `zsh`
-- `bash`
-- `fish`
+Install the completion file for `zsh`, `bash`, or `fish` and update shell config when needed.
 
 ### `gwt sync`
 
@@ -211,7 +195,7 @@ Useful option:
 
 ### `gwt ls`
 
-List active worktrees.
+List active worktrees using paths relative to the workspace root.
 
 ### `gwt prune`
 
@@ -271,7 +255,7 @@ For example, `post_get = "cd \"$1\" && npm install"` runs dependency installatio
 
 ## Shell Completion
 
-Install shell completion:
+Install completion:
 
 ```bash
 gwt completion install zsh
@@ -279,11 +263,11 @@ gwt completion install bash
 gwt completion install fish
 ```
 
-The generated completion supports:
+Completion includes:
 
 - command completion
 - option completion
-- dynamic remote branch completion for `gwt get`
+- dynamic branch completion for `gwt get`, excluding branches that already have a worktree
 - dynamic removable branch completion for `gwt rm`
 - dynamic ref completion for `gwt new --from`
 
@@ -309,13 +293,3 @@ Or link the package globally:
 ```bash
 pnpm link --global
 ```
-
-## Publishing
-
-This package is intended to be published as a public scoped npm package:
-
-```bash
-npm publish --access public
-```
-
-The repository also includes GitHub Actions workflows for CI and npm publishing.
