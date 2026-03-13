@@ -81,6 +81,10 @@ export async function runConfiguredHook(
   })
 }
 
+export function hasConfiguredHook(context: WorkspaceContext, event: HookEventName): boolean {
+  return Boolean(getHookCommand(context, event))
+}
+
 function getHookCommand(context: WorkspaceContext, event: HookEventName): string | undefined {
   if (event === 'post_new') {
     return context.config.postNew

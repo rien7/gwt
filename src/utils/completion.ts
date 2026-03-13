@@ -130,7 +130,8 @@ function getCompletionValues(kind: CompletionQueryKind): string[] {
   }
 
   if (kind === 'remote-branches') {
-    return uniqueSorted(listRemoteBranches(context))
+    const localBranches = new Set(listLocalBranches(context))
+    return uniqueSorted(listRemoteBranches(context).filter((branch) => !localBranches.has(branch)))
   }
 
   if (kind === 'local-branches') {
@@ -139,7 +140,11 @@ function getCompletionValues(kind: CompletionQueryKind): string[] {
 
   if (kind === 'removable-branches') {
     const protectedBranches = new Set(context.config.protectedBranches)
-    return uniqueSorted(listLocalBranches(context).filter((branch) => !protectedBranches.has(branch)))
+    return uniqueSorted(
+      listLocalBranches(context).filter(
+        (branch) => !protectedBranches.has(branch) && hasWorktreeForBranch(context, branch),
+      ),
+    )
   }
 
   if (kind === 'refs') {
@@ -167,6 +172,17 @@ function listRefs(context: WorkspaceContext): string[] {
     'refs/remotes/origin',
     'refs/tags',
   ]).filter((ref) => ref !== 'origin/HEAD' && ref !== 'origin')
+}
+
+function hasWorktreeForBranch(context: WorkspaceContext, branch: string): boolean {
+  const result = tryGit(['worktree', 'list', '--porcelain'], context.workspaceRoot)
+  if (result.status !== 0 || !result.stdout) {
+    return false
+  }
+
+  return result.stdout
+    .split(/\n\s*\n/)
+    .some((entry) => entry.split(/\r?\n/).includes(`branch refs/heads/${branch}`))
 }
 
 function gitLines(cwd: string, args: string[]): string[] {

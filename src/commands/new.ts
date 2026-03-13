@@ -3,7 +3,7 @@ import type { CAC } from 'cac'
 import ansis from 'ansis'
 import { errorMessage, runCliAction } from '../utils/cli'
 import { runGit, tryGit } from '../utils/git'
-import { runConfiguredHook } from '../utils/hooks'
+import { hasConfiguredHook, runConfiguredHook } from '../utils/hooks'
 import {
   assertResolvableRef,
   assertValidBranchName,
@@ -89,10 +89,12 @@ export function registerNewCommand(cli: CAC) {
         }
 
         try {
-          if (printPathOnly) {
-            process.stderr.write('Running post_new hook...\n')
-          } else {
-            log.info('Running post_new hook...')
+          if (hasConfiguredHook(context, 'post_new')) {
+            if (printPathOnly) {
+              process.stderr.write('Running post_new hook...\n')
+            } else {
+              log.info('Running post_new hook...')
+            }
           }
 
           await runConfiguredHook(

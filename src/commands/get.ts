@@ -3,7 +3,7 @@ import type { CAC } from 'cac'
 import ansis from 'ansis'
 import { errorMessage, runCliAction } from '../utils/cli'
 import { runGit, tryGit } from '../utils/git'
-import { runConfiguredHook } from '../utils/hooks'
+import { hasConfiguredHook, runConfiguredHook } from '../utils/hooks'
 import {
   assertValidBranchName,
   branchToDir,
@@ -97,10 +97,12 @@ export function registerGetCommand(cli: CAC) {
         }
 
         try {
-          if (printPathOnly) {
-            process.stderr.write('Running post_get hook...\n')
-          } else {
-            log.info('Running post_get hook...')
+          if (hasConfiguredHook(context, 'post_get')) {
+            if (printPathOnly) {
+              process.stderr.write('Running post_get hook...\n')
+            } else {
+              log.info('Running post_get hook...')
+            }
           }
 
           await runConfiguredHook(

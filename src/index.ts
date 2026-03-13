@@ -36,11 +36,16 @@ registerLsCommand(cli)
 registerPruneCommand(cli)
 
 cli.usage('<command> [options]')
-cli.example('gwt init git@github.com:owner/repo.git')
-cli.example('gwt get feature/my-thing')
-cli.example('cd "$(gwt new feature/my-thing --print-path)"')
-cli.help()
-cli.version(packageJson.version)
+cli.option('-v, --version', 'Display version number')
+cli.help((sections) =>
+  sections.filter((section) => {
+    if (!section.title) {
+      return false
+    }
+
+    return section.title !== 'Examples' && !section.title.startsWith('For more info')
+  }),
+)
 
 cli.addEventListener('command:*', (event) => {
   if (isKnownCommandHelpRequest) {
@@ -56,6 +61,11 @@ cli.addEventListener('command:*', (event) => {
 if (argv.length <= 2) {
   maybeShowCompletionInstallHint(cliArgs)
   cli.outputHelp()
+  process.exit(0)
+}
+
+if (isVersionRequest(cliArgs)) {
+  process.stdout.write(`${packageJson.version}\n`)
   process.exit(0)
 }
 
@@ -77,6 +87,10 @@ try {
 
 function wantsHelp(args: string[]): boolean {
   return args.includes('--help') || args.includes('-h')
+}
+
+function isVersionRequest(args: string[]): boolean {
+  return args.length === 1 && (args[0] === '--version' || args[0] === '-v')
 }
 
 function isKnownCommand(command: string | undefined): boolean {
