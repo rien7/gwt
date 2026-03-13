@@ -35,6 +35,19 @@ After installation:
 gwt --help
 ```
 
+If you use zsh, install completion once:
+
+```bash
+gwt completion install zsh
+```
+
+Other supported shells:
+
+```bash
+gwt completion install bash
+gwt completion install fish
+```
+
 ## What The Workspace Looks Like
 
 After `gwt init`, a workspace looks like this:
@@ -102,7 +115,7 @@ gwt sync
 
 Create a new bare-repo workspace.
 
-Useful option:
+Useful options:
 
 - `-b, --branch <name>`: use a default branch other than `main`
 
@@ -122,6 +135,7 @@ Useful options:
 - `-p, --push`: push the new branch and set upstream
 - `--from <ref>`: start from a custom ref
 - `--no-fetch`: skip `git fetch --all`
+- `--print-path`: print the created worktree path only
 
 Examples:
 
@@ -129,20 +143,23 @@ Examples:
 gwt new feature/example
 gwt new feature/example --from origin/release/1.0
 gwt new feature/example --push
+cd "$(gwt new feature/example --print-path)"
 ```
 
 ### `gwt get <branch>`
 
 Create a worktree for an existing remote branch.
 
-Useful option:
+Useful options:
 
 - `--no-fetch`: skip `git fetch --all`
+- `--print-path`: print the created worktree path only
 
 Example:
 
 ```bash
 gwt get feature/existing
+cd "$(gwt get feature/existing --print-path)"
 ```
 
 ### `gwt rm <branch>`
@@ -153,6 +170,26 @@ Useful options:
 
 - `-f, --force`: force removal when the worktree has local changes
 - `-r, --remote`: also delete the remote branch
+
+### `gwt completion [shell]`
+
+Print a shell completion script.
+
+Current support:
+
+- `zsh`
+- `bash`
+- `fish`
+
+### `gwt completion install [shell]`
+
+Install the shell completion file and update your shell config.
+
+Current support:
+
+- `zsh`
+- `bash`
+- `fish`
 
 ### `gwt sync`
 
@@ -192,6 +229,8 @@ Supported keys under `[gwt]`:
 default_branch = "main"
 protected_branches = ["main", "develop"]
 auto_push = false
+post_new = "code {path}"
+post_get = "cd \"$1\" && npm install"
 ```
 
 Meaning:
@@ -199,6 +238,54 @@ Meaning:
 - `default_branch`: base branch used by `gwt new`
 - `protected_branches`: branches that `gwt rm` refuses to delete
 - `auto_push`: whether `gwt new` should push by default
+- `post_new`: shell command to run after `gwt new`
+- `post_get`: shell command to run after `gwt get`
+
+Hook placeholders:
+
+- `{path}`: absolute path to the created worktree
+- `{branch}`: branch name
+- `{workspace_root}`: workspace root
+- `{event}`: `post_new` or `post_get`
+
+Hook positional arguments:
+
+- `$1`: absolute worktree path
+- `$2`: branch name
+- `$3`: workspace root
+- `$4`: event name
+
+The same values are also exported as environment variables:
+
+- `GWT_HOOK_PATH`
+- `GWT_HOOK_BRANCH`
+- `GWT_HOOK_WORKSPACE_ROOT`
+- `GWT_HOOK_EVENT`
+
+If a hook exits non-zero, `gwt` prints a warning but keeps the created worktree.
+
+Hooks run in a child shell rooted at the workspace root, so `cd "$1"` only affects the hook itself, not your current shell.
+For example, `post_get = "cd \"$1\" && npm install"` runs dependency installation inside the new worktree.
+
+## Shell Completion
+
+Install shell completion:
+
+```bash
+gwt completion install zsh
+gwt completion install bash
+gwt completion install fish
+```
+
+The generated completion supports:
+
+- command completion
+- option completion
+- dynamic remote branch completion for `gwt get`
+- dynamic removable branch completion for `gwt rm`
+- dynamic ref completion for `gwt new --from`
+
+Dynamic branch and ref candidates only appear when the current directory is inside a `gwt` workspace.
 
 ## Development
 

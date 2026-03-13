@@ -6,6 +6,8 @@ export type GwtConfig = {
   defaultBranch: string
   protectedBranches: string[]
   autoPush: boolean
+  postNew?: string
+  postGet?: string
 }
 
 export type WorkspaceContext = {
@@ -20,6 +22,8 @@ const DEFAULT_CONFIG: GwtConfig = {
   defaultBranch: 'main',
   protectedBranches: ['main'],
   autoPush: false,
+  postNew: undefined,
+  postGet: undefined,
 }
 
 export function repoNameFromUrl(repoUrl: string): string {
@@ -173,9 +177,15 @@ function loadWorkspaceConfig(workspaceRoot: string, commonDir: string): GwtConfi
 
 function parseTomlString(value: string, key: string): string {
   const normalized = value.trim()
-  const quoted = /^"(.*)"$/.exec(normalized)
-  if (quoted) {
-    return quoted[1]
+  if (normalized.startsWith('"') && normalized.endsWith('"')) {
+    try {
+      const parsed = JSON.parse(normalized)
+      if (typeof parsed === 'string') {
+        return parsed
+      }
+    } catch {
+      throw new Error(`Invalid gwt config value for ${key}`)
+    }
   }
 
   if (/^[A-Za-z0-9._/-]+$/.test(normalized)) {
@@ -245,6 +255,10 @@ function mergeConfigFile(configPath: string, target: GwtConfig) {
       target.protectedBranches = parseTomlStringArray(value, 'protected_branches')
     } else if (key === 'auto_push') {
       target.autoPush = parseTomlBoolean(value, 'auto_push')
+    } else if (key === 'post_new') {
+      target.postNew = parseTomlString(value, 'post_new')
+    } else if (key === 'post_get') {
+      target.postGet = parseTomlString(value, 'post_get')
     }
   }
 }

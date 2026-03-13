@@ -1,7 +1,7 @@
 {
   "name": "@rien7/gwt",
   "type": "module",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "description": "A CLI for managing Git worktrees with a bare-repo workspace layout",
   "license": "MIT",
   "author": "rien7",

@@ -1,8 +1,9 @@
 import { intro, log, outro, spinner } from '@clack/prompts'
 import type { CAC } from 'cac'
 import ansis from 'ansis'
-import { runCliAction } from '../utils/cli'
+import { errorMessage, runCliAction } from '../utils/cli'
 import { runGit, tryGit } from '../utils/git'
+import { runConfiguredHook } from '../utils/hooks'
 import {
   assertValidBranchName,
   branchToDir,
@@ -13,30 +14,48 @@ import {
 } from '../utils/workspace'
 
 type GetOptions = {
-  noFetch?: boolean
+  fetch?: boolean
+  printPath?: boolean
 }
 
 export function registerGetCommand(cli: CAC) {
   cli
     .command('get <branch>', 'Checkout an existing remote branch as a local worktree')
     .option('--no-fetch', 'Skip git fetch --all before checkout')
+    .option('--print-path', 'Print the created worktree path only')
     .example('gwt get feature/my-thing')
+    .example('cd "$(gwt get feature/my-thing --print-path)"')
     .action((branch: string, options: GetOptions) =>
       runCliAction(async () => {
         assertValidBranchName(branch)
 
         const context = resolveWorkspaceContext()
+        const printPathOnly = options.printPath === true
         const worktreeDir = branchToDir(branch)
         const worktreePath = `${context.workspaceRoot}/${worktreeDir}`
         const s = spinner()
+        const warn = (message: string) => {
+          if (printPathOnly) {
+            process.stderr.write(`${message}\n`)
+            return
+          }
 
-        intro(ansis.bold('gwt get'))
+          log.warn(message)
+        }
+
+        if (!printPathOnly) {
+          intro(ansis.bold('gwt get'))
+        }
         ensureMissingPath(worktreePath, 'Worktree directory')
 
-        if (!options.noFetch) {
-          s.start('Fetching remote branches')
+        if (options.fetch !== false) {
+          if (!printPathOnly) {
+            s.start('Fetching remote branches')
+          }
           runGit(['fetch', '--all'], context.workspaceRoot)
-          s.stop('Remote branches fetched')
+          if (!printPathOnly) {
+            s.stop('Remote branches fetched')
+          }
         }
 
         if (!remoteBranchExistsOnOrigin(context.workspaceRoot, branch)) {
@@ -52,29 +71,50 @@ export function registerGetCommand(cli: CAC) {
         }
 
         if (localBranchExists(context.commonDir, branch)) {
-          s.start(`Attaching worktree ${worktreeDir}`)
+          if (!printPathOnly) {
+            s.start(`Attaching worktree ${worktreeDir}`)
+          }
           runGit(['worktree', 'add', worktreeDir, branch], context.workspaceRoot)
-          s.stop(`Worktree ${worktreeDir} attached`)
+          if (!printPathOnly) {
+            s.stop(`Worktree ${worktreeDir} attached`)
+          }
 
           const upstreamResult = tryGit(
             ['branch', '--set-upstream-to', `origin/${branch}`, branch],
             worktreePath,
           )
           if (upstreamResult.status !== 0) {
-            log.warn(`Failed to set upstream for ${branch}; continue manually if needed.`)
+            warn(`Failed to set upstream for ${branch}; continue manually if needed.`)
           }
         } else {
-          s.start(`Creating local branch ${branch}`)
+          if (!printPathOnly) {
+            s.start(`Creating local branch ${branch}`)
+          }
           runGit(['worktree', 'add', '-b', branch, worktreeDir, `origin/${branch}`], context.workspaceRoot)
-          s.stop(`Local branch ${branch} created`)
+          if (!printPathOnly) {
+            s.stop(`Local branch ${branch} created`)
+          }
         }
 
-        outro(
-          [
-            ansis.green(`Worktree ready: ${worktreePath}`),
-            `Branch: ${branch}`,
-          ].join('\n'),
-        )
+        try {
+          const hookOutput = runConfiguredHook(context, 'post_get', {
+            branch,
+            path: worktreePath,
+          })
+          if (hookOutput) {
+            const stream = printPathOnly ? process.stderr : process.stdout
+            stream.write(`${hookOutput}\n`)
+          }
+        } catch (error) {
+          warn(`post_get hook failed: ${errorMessage(error)}`)
+        }
+
+        if (printPathOnly) {
+          process.stdout.write(`${worktreePath}\n`)
+          return
+        }
+
+        outro([ansis.green(`Worktree ready: ${worktreePath}`), `Branch: ${branch}`].join('\n'))
       }),
     )
 }
